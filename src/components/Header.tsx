@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { Menu, Search, Bell } from 'lucide-react';
 import { categories } from '../data/recipes';
 
@@ -8,31 +8,29 @@ interface HeaderProps {
 }
 
 export default function Header({ activeTab, onTabChange }: HeaderProps) {
-  const [searchQuery, setSearchQuery] = useState('');
+  const navigate = useNavigate();
 
   return (
-    <header className="bg-white sticky top-0 z-50">
+    <header className="bg-white dark:bg-gray-800 sticky top-0 z-50">
       {/* Top bar with menu, search, and notifications */}
       <div className="flex items-center px-4 py-3 gap-3">
         <button className="p-1">
-          <Menu className="w-6 h-6 text-gray-600" />
+          <Menu className="w-6 h-6 text-gray-600 dark:text-gray-300" />
         </button>
 
-        <div className="flex-1 relative">
-          <div className="flex items-center bg-gray-100 rounded-full px-4 py-2">
+        <button
+          onClick={() => navigate('/search')}
+          className="flex-1 relative"
+        >
+          <div className="flex items-center bg-gray-100 dark:bg-gray-700 rounded-full px-4 py-2">
             <Search className="w-5 h-5 text-gray-400 mr-2" />
-            <input
-              type="text"
-              placeholder="搜索菜谱"
-              value={searchQuery}
-              onChange={(e) => setSearchQuery(e.target.value)}
-              className="bg-transparent outline-none flex-1 text-sm text-gray-600 placeholder-gray-400"
-            />
+            <span className="text-sm text-gray-400">搜索菜谱</span>
           </div>
-        </div>
+        </button>
 
         <button className="p-1 relative">
-          <Bell className="w-6 h-6 text-gray-600" />
+          <Bell className="w-6 h-6 text-gray-600 dark:text-gray-300" />
+          <span className="absolute top-0 right-0 w-2 h-2 bg-red-500 rounded-full" />
         </button>
       </div>
 
@@ -44,8 +42,8 @@ export default function Header({ activeTab, onTabChange }: HeaderProps) {
             onClick={() => onTabChange(category.id)}
             className={`px-4 py-2 whitespace-nowrap text-sm font-medium transition-colors relative ${
               activeTab === category.id
-                ? 'text-gray-900'
-                : 'text-gray-500'
+                ? 'text-gray-900 dark:text-white'
+                : 'text-gray-500 dark:text-gray-400'
             }`}
           >
             {category.name}

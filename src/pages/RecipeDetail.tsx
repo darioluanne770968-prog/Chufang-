@@ -1,68 +1,192 @@
+import { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
-import { ArrowLeft, Heart, Share2, Clock, ChefHat, Users } from 'lucide-react';
+import {
+  ArrowLeft,
+  Heart,
+  Share2,
+  Clock,
+  ChefHat,
+  Users,
+  Star,
+  MessageCircle,
+  ShoppingCart,
+  Play,
+  Timer,
+  Send,
+  ThumbsUp,
+  Flame,
+} from 'lucide-react';
 import { recipes } from '../data/recipes';
+import {
+  useFavorites,
+  useComments,
+  useRatings,
+  useShoppingList,
+  useCookingMode,
+  useBrowsingHistory,
+  useFollowing,
+} from '../context/AppContext';
+import { formatRelativeTime, shareRecipe, calculateNutrition } from '../utils/helpers';
+import TimerComponent from '../components/Timer';
+import { RecipeDetailSkeleton } from '../components/Skeleton';
+
+// Sample ingredients (in real app, would be part of recipe data)
+const getIngredients = () => [
+  '主料：杏鲍菇 300g',
+  '生抽 2勺',
+  '老抽 1勺',
+  '蚝油 1勺',
+  '白糖 1勺',
+  '蒜末 适量',
+  '干辣椒 适量',
+  '花椒 适量',
+  '葱花 适量',
+];
+
+// Sample steps
+const getSteps = () => [
+  {
+    step: 1,
+    content: '杏鲍菇洗净，切成细丝，尽量切得细一些，这样更容易入味。',
+    image: 'https://images.unsplash.com/photo-1506905925346-21bda4d32df4?w=400',
+  },
+  {
+    step: 2,
+    content: '锅中放油，油热后放入杏鲍菇丝，中小火慢慢煸炒，直到杏鲍菇变软出水。',
+    image: 'https://images.unsplash.com/photo-1547592180-85f173990554?w=400',
+  },
+  {
+    step: 3,
+    content: '继续翻炒直到水分收干，杏鲍菇开始变得金黄。',
+    image: 'https://images.unsplash.com/photo-1476124369491-e7addf5db371?w=400',
+  },
+  {
+    step: 4,
+    content: '加入蒜末、干辣椒和花椒，翻炒出香味。',
+    image: null,
+  },
+  {
+    step: 5,
+    content: '加入生抽、老抽、蚝油和白糖，翻炒均匀让杏鲍菇上色。',
+    image: null,
+  },
+  {
+    step: 6,
+    content: '最后撒上葱花，翻炒几下即可出锅。',
+    image: 'https://images.unsplash.com/photo-1604908176997-125f25cc6f3d?w=400',
+  },
+];
 
 export default function RecipeDetail() {
   const { id } = useParams();
   const navigate = useNavigate();
+  const [loading, setLoading] = useState(true);
+  const [showTimer, setShowTimer] = useState(false);
+  const [commentText, setCommentText] = useState('');
+  const [userRating, setUserRating] = useState(0);
+  const [activeTab, setActiveTab] = useState<'ingredients' | 'steps' | 'comments'>('ingredients');
+
+  const { isFavorite, toggleFavorite } = useFavorites();
+  const { getRecipeComments, addComment, likeComment } = useComments();
+  const { getRating, rateRecipe } = useRatings();
+  const { addRecipeIngredients } = useShoppingList();
+  const { startCooking } = useCookingMode();
+  const { addToHistory } = useBrowsingHistory();
+  const { isFollowing, toggleFollow } = useFollowing();
+
   const recipe = recipes.find((r) => r.id === Number(id));
+  const ingredients = getIngredients();
+  const steps = getSteps();
+  const comments = getRecipeComments(Number(id));
+  const savedRating = getRating(Number(id));
+  const nutrition = calculateNutrition(ingredients);
+
+  // Simulate loading
+  useEffect(() => {
+    setLoading(true);
+    const timer = setTimeout(() => setLoading(false), 500);
+    return () => clearTimeout(timer);
+  }, [id]);
+
+  // Add to browsing history
+  useEffect(() => {
+    if (id) {
+      addToHistory(Number(id));
+    }
+  }, [id, addToHistory]);
+
+  // Set initial rating from saved
+  useEffect(() => {
+    if (savedRating) {
+      setUserRating(savedRating);
+    }
+  }, [savedRating]);
+
+  if (loading) {
+    return <RecipeDetailSkeleton />;
+  }
 
   if (!recipe) {
     return (
       <div className="min-h-screen flex items-center justify-center">
-        <p className="text-gray-500">菜谱不存在</p>
+        <p className="text-gray-500 dark:text-gray-400">菜谱不存在</p>
       </div>
     );
   }
 
-  // Sample ingredients and steps for demo
-  const ingredients = [
-    '主料：杏鲍菇 300g',
-    '调料：生抽 2勺',
-    '老抽 1勺',
-    '蚝油 1勺',
-    '白糖 1勺',
-    '蒜末 适量',
-    '干辣椒 适量',
-    '花椒 适量',
-    '葱花 适量',
-  ];
+  const handleShare = async () => {
+    const shared = await shareRecipe(
+      recipe.title,
+      recipe.description || '来自下厨房的美味菜谱',
+      window.location.href
+    );
+    if (shared) {
+      alert('分享成功！');
+    }
+  };
 
-  const steps = [
-    {
-      step: 1,
-      content: '杏鲍菇洗净，切成细丝，尽量切得细一些，这样更容易入味。',
-      image: 'https://images.unsplash.com/photo-1506905925346-21bda4d32df4?w=400',
-    },
-    {
-      step: 2,
-      content: '锅中放油，油热后放入杏鲍菇丝，中小火慢慢煸炒，直到杏鲍菇变软出水。',
-      image: 'https://images.unsplash.com/photo-1547592180-85f173990554?w=400',
-    },
-    {
-      step: 3,
-      content: '继续翻炒直到水分收干，杏鲍菇开始变得金黄。',
-      image: 'https://images.unsplash.com/photo-1476124369491-e7addf5db371?w=400',
-    },
-    {
-      step: 4,
-      content: '加入蒜末、干辣椒和花椒，翻炒出香味。',
-      image: null,
-    },
-    {
-      step: 5,
-      content: '加入生抽、老抽、蚝油和白糖，翻炒均匀让杏鲍菇上色。',
-      image: null,
-    },
-    {
-      step: 6,
-      content: '最后撒上葱花，翻炒几下即可出锅。',
-      image: 'https://images.unsplash.com/photo-1604908176997-125f25cc6f3d?w=400',
-    },
-  ];
+  const handleAddToShoppingList = () => {
+    addRecipeIngredients(recipe.id, recipe.title, ingredients);
+    alert('已添加到购物清单！');
+  };
+
+  const handleStartCooking = () => {
+    startCooking(recipe.id);
+    navigate(`/cooking/${recipe.id}`);
+  };
+
+  const handleSubmitComment = () => {
+    if (!commentText.trim()) return;
+
+    addComment({
+      id: Date.now(),
+      recipeId: recipe.id,
+      userId: 1,
+      userName: '我',
+      userAvatar: 'https://i.pravatar.cc/40?img=33',
+      content: commentText,
+      rating: userRating,
+      createdAt: new Date().toISOString(),
+      likes: 0,
+    });
+
+    if (userRating > 0) {
+      rateRecipe(recipe.id, userRating);
+    }
+
+    setCommentText('');
+  };
+
+  const handleRating = (rating: number) => {
+    setUserRating(rating);
+    rateRecipe(recipe.id, rating);
+  };
+
+  const isFav = isFavorite(recipe.id);
+  const isFollowingAuthor = isFollowing(1); // Mock author ID
 
   return (
-    <div className="min-h-screen bg-white pb-24">
+    <div className="min-h-screen bg-white dark:bg-gray-900 pb-24">
       {/* Hero Image */}
       <div className="relative">
         <img
@@ -74,7 +198,7 @@ export default function RecipeDetail() {
             target.src = `https://picsum.photos/800/600?random=${recipe.id}`;
           }}
         />
-        <div className="absolute inset-0 bg-gradient-to-t from-black/50 to-transparent" />
+        <div className="absolute inset-0 bg-gradient-to-t from-black/60 to-transparent" />
 
         {/* Top navigation */}
         <div className="absolute top-0 left-0 right-0 p-4 flex items-center justify-between">
@@ -85,10 +209,18 @@ export default function RecipeDetail() {
             <ArrowLeft className="w-6 h-6 text-white" />
           </button>
           <div className="flex gap-2">
-            <button className="p-2 bg-black/20 rounded-full backdrop-blur-sm">
-              <Heart className="w-6 h-6 text-white" />
+            <button
+              onClick={() => toggleFavorite(recipe.id)}
+              className="p-2 bg-black/20 rounded-full backdrop-blur-sm"
+            >
+              <Heart
+                className={`w-6 h-6 ${isFav ? 'text-red-500 fill-red-500' : 'text-white'}`}
+              />
             </button>
-            <button className="p-2 bg-black/20 rounded-full backdrop-blur-sm">
+            <button
+              onClick={handleShare}
+              className="p-2 bg-black/20 rounded-full backdrop-blur-sm"
+            >
               <Share2 className="w-6 h-6 text-white" />
             </button>
           </div>
@@ -102,7 +234,7 @@ export default function RecipeDetail() {
       </div>
 
       {/* Author info */}
-      <div className="p-4 flex items-center justify-between border-b border-gray-100">
+      <div className="p-4 flex items-center justify-between border-b border-gray-100 dark:border-gray-800">
         <div className="flex items-center gap-3">
           <img
             src={recipe.authorAvatar}
@@ -110,17 +242,24 @@ export default function RecipeDetail() {
             className="w-10 h-10 rounded-full"
           />
           <div>
-            <p className="font-medium text-gray-900">{recipe.author}</p>
+            <p className="font-medium text-gray-900 dark:text-white">{recipe.author}</p>
             <p className="text-xs text-gray-400">发布于 3 天前</p>
           </div>
         </div>
-        <button className="px-4 py-1.5 bg-orange-500 text-white rounded-full text-sm font-medium">
-          关注
+        <button
+          onClick={() => toggleFollow(1)}
+          className={`px-4 py-1.5 rounded-full text-sm font-medium transition-colors ${
+            isFollowingAuthor
+              ? 'bg-gray-100 dark:bg-gray-700 text-gray-600 dark:text-gray-300'
+              : 'bg-orange-500 text-white'
+          }`}
+        >
+          {isFollowingAuthor ? '已关注' : '关注'}
         </button>
       </div>
 
       {/* Stats */}
-      <div className="p-4 flex items-center gap-6 border-b border-gray-100">
+      <div className="p-4 flex items-center gap-6 border-b border-gray-100 dark:border-gray-800">
         <div className="flex items-center gap-1.5 text-gray-500 text-sm">
           <Clock className="w-4 h-4" />
           <span>{recipe.cookTime || '30分钟'}</span>
@@ -135,56 +274,266 @@ export default function RecipeDetail() {
         </div>
       </div>
 
-      {/* Ingredients */}
-      <div className="p-4 border-b border-gray-100">
-        <h2 className="text-lg font-bold text-gray-900 mb-4">食材用料</h2>
-        <div className="grid grid-cols-2 gap-2">
-          {ingredients.map((item, index) => (
-            <div
-              key={index}
-              className="flex items-center gap-2 py-2 border-b border-gray-50"
-            >
-              <span className="text-sm text-gray-700">{item}</span>
-            </div>
-          ))}
+      {/* Rating */}
+      <div className="p-4 border-b border-gray-100 dark:border-gray-800">
+        <div className="flex items-center justify-between">
+          <span className="text-sm text-gray-600 dark:text-gray-300">我的评分</span>
+          <div className="flex items-center gap-1">
+            {[1, 2, 3, 4, 5].map((star) => (
+              <button key={star} onClick={() => handleRating(star)}>
+                <Star
+                  className={`w-6 h-6 ${
+                    star <= userRating ? 'text-yellow-400 fill-yellow-400' : 'text-gray-300'
+                  }`}
+                />
+              </button>
+            ))}
+          </div>
         </div>
       </div>
 
-      {/* Steps */}
-      <div className="p-4">
-        <h2 className="text-lg font-bold text-gray-900 mb-4">烹饪步骤</h2>
-        <div className="space-y-6">
-          {steps.map((step) => (
-            <div key={step.step}>
-              <div className="flex items-start gap-3">
-                <div className="w-6 h-6 bg-orange-500 rounded-full flex items-center justify-center flex-shrink-0">
-                  <span className="text-white text-sm font-bold">{step.step}</span>
-                </div>
-                <p className="text-gray-700 text-sm flex-1 leading-relaxed">
-                  {step.content}
-                </p>
-              </div>
-              {step.image && (
-                <img
-                  src={step.image}
-                  alt={`Step ${step.step}`}
-                  className="w-full h-48 object-cover rounded-xl mt-3 ml-9"
-                />
-              )}
-            </div>
-          ))}
+      {/* Nutrition Info */}
+      <div className="p-4 border-b border-gray-100 dark:border-gray-800">
+        <h3 className="text-sm font-medium text-gray-700 dark:text-gray-300 mb-3 flex items-center gap-2">
+          <Flame className="w-4 h-4 text-orange-500" />
+          营养信息 (每份)
+        </h3>
+        <div className="grid grid-cols-4 gap-2">
+          <div className="bg-orange-50 dark:bg-orange-900/20 rounded-lg p-2 text-center">
+            <p className="text-lg font-bold text-orange-600">{nutrition.calories}</p>
+            <p className="text-xs text-gray-500">卡路里</p>
+          </div>
+          <div className="bg-blue-50 dark:bg-blue-900/20 rounded-lg p-2 text-center">
+            <p className="text-lg font-bold text-blue-600">{nutrition.protein}g</p>
+            <p className="text-xs text-gray-500">蛋白质</p>
+          </div>
+          <div className="bg-green-50 dark:bg-green-900/20 rounded-lg p-2 text-center">
+            <p className="text-lg font-bold text-green-600">{nutrition.carbs}g</p>
+            <p className="text-xs text-gray-500">碳水</p>
+          </div>
+          <div className="bg-yellow-50 dark:bg-yellow-900/20 rounded-lg p-2 text-center">
+            <p className="text-lg font-bold text-yellow-600">{nutrition.fat}g</p>
+            <p className="text-xs text-gray-500">脂肪</p>
+          </div>
         </div>
+      </div>
+
+      {/* Tabs */}
+      <div className="flex border-b border-gray-100 dark:border-gray-800">
+        {[
+          { id: 'ingredients', label: '食材', icon: ShoppingCart },
+          { id: 'steps', label: '步骤', icon: ChefHat },
+          { id: 'comments', label: `评论(${comments.length})`, icon: MessageCircle },
+        ].map((tab) => (
+          <button
+            key={tab.id}
+            onClick={() => setActiveTab(tab.id as typeof activeTab)}
+            className={`flex-1 py-3 flex items-center justify-center gap-2 text-sm font-medium transition-colors ${
+              activeTab === tab.id
+                ? 'text-orange-500 border-b-2 border-orange-500'
+                : 'text-gray-500 dark:text-gray-400'
+            }`}
+          >
+            <tab.icon className="w-4 h-4" />
+            {tab.label}
+          </button>
+        ))}
+      </div>
+
+      {/* Tab Content */}
+      <div className="p-4">
+        {activeTab === 'ingredients' && (
+          <div>
+            <div className="flex items-center justify-between mb-4">
+              <h2 className="text-lg font-bold text-gray-900 dark:text-white">食材用料</h2>
+              <button
+                onClick={handleAddToShoppingList}
+                className="flex items-center gap-1 text-orange-500 text-sm"
+              >
+                <ShoppingCart className="w-4 h-4" />
+                加入购物清单
+              </button>
+            </div>
+            <div className="space-y-2">
+              {ingredients.map((item, index) => (
+                <div
+                  key={index}
+                  className="flex items-center gap-3 py-2 border-b border-gray-50 dark:border-gray-800"
+                >
+                  <div className="w-2 h-2 bg-orange-500 rounded-full" />
+                  <span className="text-sm text-gray-700 dark:text-gray-300">{item}</span>
+                </div>
+              ))}
+            </div>
+          </div>
+        )}
+
+        {activeTab === 'steps' && (
+          <div>
+            <div className="flex items-center justify-between mb-4">
+              <h2 className="text-lg font-bold text-gray-900 dark:text-white">烹饪步骤</h2>
+              <button
+                onClick={() => setShowTimer(true)}
+                className="flex items-center gap-1 text-orange-500 text-sm"
+              >
+                <Timer className="w-4 h-4" />
+                计时器
+              </button>
+            </div>
+            <div className="space-y-6">
+              {steps.map((step) => (
+                <div key={step.step}>
+                  <div className="flex items-start gap-3">
+                    <div className="w-6 h-6 bg-orange-500 rounded-full flex items-center justify-center flex-shrink-0">
+                      <span className="text-white text-sm font-bold">{step.step}</span>
+                    </div>
+                    <p className="text-gray-700 dark:text-gray-300 text-sm flex-1 leading-relaxed">
+                      {step.content}
+                    </p>
+                  </div>
+                  {step.image && (
+                    <img
+                      src={step.image}
+                      alt={`Step ${step.step}`}
+                      className="w-full h-48 object-cover rounded-xl mt-3 ml-9"
+                    />
+                  )}
+                </div>
+              ))}
+            </div>
+          </div>
+        )}
+
+        {activeTab === 'comments' && (
+          <div>
+            <h2 className="text-lg font-bold text-gray-900 dark:text-white mb-4">
+              评论 ({comments.length})
+            </h2>
+
+            {/* Comment Input */}
+            <div className="flex gap-3 mb-6">
+              <img
+                src="https://i.pravatar.cc/40?img=33"
+                alt="Me"
+                className="w-10 h-10 rounded-full"
+              />
+              <div className="flex-1">
+                <textarea
+                  value={commentText}
+                  onChange={(e) => setCommentText(e.target.value)}
+                  placeholder="分享你的烹饪心得..."
+                  rows={2}
+                  className="w-full border border-gray-200 dark:border-gray-700 dark:bg-gray-800 dark:text-white rounded-lg px-3 py-2 text-sm focus:outline-none focus:border-orange-400 resize-none"
+                />
+                <div className="flex items-center justify-between mt-2">
+                  <div className="flex items-center gap-1">
+                    {[1, 2, 3, 4, 5].map((star) => (
+                      <button key={star} onClick={() => setUserRating(star)}>
+                        <Star
+                          className={`w-4 h-4 ${
+                            star <= userRating ? 'text-yellow-400 fill-yellow-400' : 'text-gray-300'
+                          }`}
+                        />
+                      </button>
+                    ))}
+                  </div>
+                  <button
+                    onClick={handleSubmitComment}
+                    disabled={!commentText.trim()}
+                    className="px-4 py-1.5 bg-orange-500 text-white rounded-full text-sm font-medium disabled:opacity-50"
+                  >
+                    <Send className="w-4 h-4" />
+                  </button>
+                </div>
+              </div>
+            </div>
+
+            {/* Comments List */}
+            {comments.length === 0 ? (
+              <div className="text-center py-8">
+                <MessageCircle className="w-12 h-12 text-gray-300 mx-auto mb-2" />
+                <p className="text-gray-400">还没有评论，快来抢沙发吧！</p>
+              </div>
+            ) : (
+              <div className="space-y-4">
+                {comments.map((comment) => (
+                  <div key={comment.id} className="flex gap-3">
+                    <img
+                      src={comment.userAvatar}
+                      alt={comment.userName}
+                      className="w-10 h-10 rounded-full"
+                    />
+                    <div className="flex-1">
+                      <div className="flex items-center gap-2 mb-1">
+                        <span className="font-medium text-gray-900 dark:text-white text-sm">
+                          {comment.userName}
+                        </span>
+                        {comment.rating > 0 && (
+                          <div className="flex items-center">
+                            {[1, 2, 3, 4, 5].map((star) => (
+                              <Star
+                                key={star}
+                                className={`w-3 h-3 ${
+                                  star <= comment.rating
+                                    ? 'text-yellow-400 fill-yellow-400'
+                                    : 'text-gray-300'
+                                }`}
+                              />
+                            ))}
+                          </div>
+                        )}
+                      </div>
+                      <p className="text-sm text-gray-600 dark:text-gray-300">{comment.content}</p>
+                      <div className="flex items-center gap-4 mt-2">
+                        <span className="text-xs text-gray-400">
+                          {formatRelativeTime(comment.createdAt)}
+                        </span>
+                        <button
+                          onClick={() => likeComment(comment.id)}
+                          className="flex items-center gap-1 text-xs text-gray-400 hover:text-orange-500"
+                        >
+                          <ThumbsUp className="w-3 h-3" />
+                          {comment.likes > 0 && comment.likes}
+                        </button>
+                      </div>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            )}
+          </div>
+        )}
       </div>
 
       {/* Bottom action bar */}
-      <div className="fixed bottom-0 left-0 right-0 bg-white border-t border-gray-100 p-4 flex items-center gap-4">
-        <button className="flex-1 bg-orange-500 text-white py-3 rounded-full font-medium hover:bg-orange-600 transition-colors">
-          我做了这道菜
+      <div className="fixed bottom-0 left-0 right-0 bg-white dark:bg-gray-800 border-t border-gray-100 dark:border-gray-700 p-4 flex items-center gap-3 z-40">
+        <button
+          onClick={handleStartCooking}
+          className="flex-1 bg-orange-500 text-white py-3 rounded-full font-medium hover:bg-orange-600 transition-colors flex items-center justify-center gap-2"
+        >
+          <Play className="w-5 h-5" />
+          开始做菜
         </button>
-        <button className="p-3 border border-gray-200 rounded-full">
-          <Heart className="w-6 h-6 text-gray-400" />
+        <button
+          onClick={() => toggleFavorite(recipe.id)}
+          className={`p-3 border rounded-full ${
+            isFav
+              ? 'border-red-500 text-red-500'
+              : 'border-gray-200 dark:border-gray-600 text-gray-400'
+          }`}
+        >
+          <Heart className={`w-6 h-6 ${isFav ? 'fill-red-500' : ''}`} />
+        </button>
+        <button
+          onClick={() => setShowTimer(true)}
+          className="p-3 border border-gray-200 dark:border-gray-600 rounded-full text-gray-400"
+        >
+          <Timer className="w-6 h-6" />
         </button>
       </div>
+
+      {/* Timer Modal */}
+      {showTimer && <TimerComponent onClose={() => setShowTimer(false)} />}
     </div>
   );
 }
