@@ -11,6 +11,12 @@ import ShoppingList from './pages/ShoppingList';
 import History from './pages/History';
 import Settings from './pages/Settings';
 import CookingMode from './pages/CookingMode';
+import Statistics from './pages/Statistics';
+import Achievements from './pages/Achievements';
+import Challenges from './pages/Challenges';
+import MealPlanner from './pages/MealPlanner';
+import Pantry from './pages/Pantry';
+import IngredientSearch from './pages/IngredientSearch';
 import BottomNav from './components/BottomNav';
 
 // Routes where bottom nav should be hidden
@@ -36,6 +42,12 @@ function AppContent() {
         <Route path="/history" element={<History />} />
         <Route path="/settings" element={<Settings />} />
         <Route path="/cooking/:id" element={<CookingMode />} />
+        <Route path="/statistics" element={<Statistics />} />
+        <Route path="/achievements" element={<Achievements />} />
+        <Route path="/challenges" element={<Challenges />} />
+        <Route path="/meal-planner" element={<MealPlanner />} />
+        <Route path="/pantry" element={<Pantry />} />
+        <Route path="/ingredient-search" element={<IngredientSearch />} />
       </Routes>
       {!shouldHideBottomNav && <BottomNav />}
     </div>

@@ -15,6 +15,12 @@ import {
   Send,
   ThumbsUp,
   Flame,
+  Minus,
+  Plus,
+  Printer,
+  Download,
+  AlertTriangle,
+  RefreshCw,
 } from 'lucide-react';
 import { recipes } from '../data/recipes';
 import {
@@ -77,6 +83,29 @@ const getSteps = () => [
   },
 ];
 
+// Allergen detection
+const allergenKeywords: Record<string, string[]> = {
+  '花生': ['花生', '花生酱', '花生油'],
+  '坚果': ['核桃', '杏仁', '腰果', '开心果', '榛子'],
+  '乳制品': ['牛奶', '奶油', '芝士', '奶酪', '黄油', '乳酪'],
+  '麸质': ['面粉', '面条', '面包', '馒头', '小麦'],
+  '海鲜': ['虾', '蟹', '鱼', '贝', '蛤', '蚝', '龙虾'],
+  '鸡蛋': ['鸡蛋', '蛋黄', '蛋白', '蛋清'],
+  '大豆': ['豆腐', '酱油', '豆浆', '豆瓣酱', '黄豆'],
+};
+
+// Ingredient substitutions
+const substitutionMap: Record<string, { sub: string; note: string }[]> = {
+  '生抽': [{ sub: '酱油', note: '味道相近' }, { sub: '味极鲜', note: '更鲜美' }],
+  '老抽': [{ sub: '生抽+少许糖', note: '上色效果类似' }],
+  '蚝油': [{ sub: '鲍鱼汁', note: '更高档' }, { sub: '生抽+糖', note: '简单替代' }],
+  '白糖': [{ sub: '蜂蜜', note: '更健康' }, { sub: '冰糖', note: '甜味更纯' }],
+  '猪肉': [{ sub: '鸡肉', note: '更低脂' }, { sub: '牛肉', note: '更有嚼劲' }],
+  '牛奶': [{ sub: '豆浆', note: '乳糖不耐受适用' }, { sub: '椰奶', note: '素食替代' }],
+  '鸡蛋': [{ sub: '嫩豆腐', note: '素食替代' }],
+  '面粉': [{ sub: '糯米粉', note: '无麸质' }, { sub: '玉米淀粉', note: '无麸质' }],
+};
+
 export default function RecipeDetail() {
   const { id } = useParams();
   const navigate = useNavigate();
@@ -85,6 +114,8 @@ export default function RecipeDetail() {
   const [commentText, setCommentText] = useState('');
   const [userRating, setUserRating] = useState(0);
   const [activeTab, setActiveTab] = useState<'ingredients' | 'steps' | 'comments'>('ingredients');
+  const [servings, setServings] = useState(2);
+  const [showSubstitutions, setShowSubstitutions] = useState(false);
 
   const { isFavorite, toggleFavorite } = useFavorites();
   const { getRecipeComments, addComment, likeComment } = useComments();
@@ -95,11 +126,103 @@ export default function RecipeDetail() {
   const { isFollowing, toggleFollow } = useFollowing();
 
   const recipe = recipes.find((r) => r.id === Number(id));
-  const ingredients = getIngredients();
+  const baseIngredients = getIngredients();
   const steps = getSteps();
   const comments = getRecipeComments(Number(id));
   const savedRating = getRating(Number(id));
-  const nutrition = calculateNutrition(ingredients);
+  const nutrition = calculateNutrition(baseIngredients);
+
+  // Portion calculator: adjust ingredient quantities
+  const baseServings = 2;
+  const ingredients = baseIngredients.map((item) => {
+    const match = item.match(/(\d+(?:\.\d+)?)\s*(g|克|ml|毫升|勺|个|只|片|根)?/);
+    if (match) {
+      const originalQty = parseFloat(match[1]);
+      const unit = match[2] || '';
+      const adjustedQty = Math.round((originalQty * servings / baseServings) * 10) / 10;
+      return item.replace(match[0], `${adjustedQty}${unit}`);
+    }
+    return item;
+  });
+
+  // Detect allergens in ingredients
+  const detectedAllergens = Object.entries(allergenKeywords)
+    .filter(([_, keywords]) =>
+      keywords.some((keyword) =>
+        baseIngredients.some((ing) => ing.includes(keyword))
+      )
+    )
+    .map(([allergen]) => allergen);
+
+  // Find available substitutions
+  const availableSubstitutions = baseIngredients
+    .map((ing) => {
+      const key = Object.keys(substitutionMap).find((k) => ing.includes(k));
+      if (key) {
+        return { original: key, subs: substitutionMap[key] };
+      }
+      return null;
+    })
+    .filter(Boolean) as { original: string; subs: { sub: string; note: string }[] }[];
+
+  // Print recipe
+  const handlePrint = () => {
+    window.print();
+  };
+
+  // Export recipe as image (simplified version)
+  const handleExport = async () => {
+    try {
+      const canvas = document.createElement('canvas');
+      const ctx = canvas.getContext('2d');
+      if (!ctx || !recipe) return;
+
+      canvas.width = 800;
+      canvas.height = 1200;
+
+      // Background
+      ctx.fillStyle = '#fff';
+      ctx.fillRect(0, 0, canvas.width, canvas.height);
+
+      // Title
+      ctx.fillStyle = '#f97316';
+      ctx.fillRect(0, 0, canvas.width, 200);
+      ctx.font = 'bold 48px sans-serif';
+      ctx.fillStyle = '#fff';
+      ctx.fillText(recipe.title, 40, 120);
+
+      // Ingredients
+      ctx.font = 'bold 24px sans-serif';
+      ctx.fillStyle = '#333';
+      ctx.fillText('食材用料', 40, 260);
+      ctx.font = '18px sans-serif';
+      ingredients.forEach((ing, i) => {
+        ctx.fillText(`• ${ing}`, 40, 300 + i * 30);
+      });
+
+      // Steps
+      const stepsY = 320 + ingredients.length * 30;
+      ctx.font = 'bold 24px sans-serif';
+      ctx.fillText('烹饪步骤', 40, stepsY);
+      ctx.font = '18px sans-serif';
+      steps.forEach((step, i) => {
+        const lines = step.content.match(/.{1,40}/g) || [];
+        lines.forEach((line, j) => {
+          ctx.fillText(j === 0 ? `${step.step}. ${line}` : `   ${line}`, 40, stepsY + 40 + i * 80 + j * 24);
+        });
+      });
+
+      // Download
+      const link = document.createElement('a');
+      link.download = `${recipe.title}.png`;
+      link.href = canvas.toDataURL('image/png');
+      link.click();
+
+      alert('菜谱图片已保存！');
+    } catch (error) {
+      alert('导出失败，请稍后重试');
+    }
+  };
 
   // Simulate loading
   useEffect(() => {
@@ -210,6 +333,18 @@ export default function RecipeDetail() {
           </button>
           <div className="flex gap-2">
             <button
+              onClick={handlePrint}
+              className="p-2 bg-black/20 rounded-full backdrop-blur-sm"
+            >
+              <Printer className="w-6 h-6 text-white" />
+            </button>
+            <button
+              onClick={handleExport}
+              className="p-2 bg-black/20 rounded-full backdrop-blur-sm"
+            >
+              <Download className="w-6 h-6 text-white" />
+            </button>
+            <button
               onClick={() => toggleFavorite(recipe.id)}
               className="p-2 bg-black/20 rounded-full backdrop-blur-sm"
             >
@@ -292,6 +427,52 @@ export default function RecipeDetail() {
         </div>
       </div>
 
+      {/* Portion Calculator */}
+      <div className="p-4 border-b border-gray-100 dark:border-gray-800">
+        <div className="flex items-center justify-between">
+          <h3 className="text-sm font-medium text-gray-700 dark:text-gray-300 flex items-center gap-2">
+            <Users className="w-4 h-4 text-orange-500" />
+            份量调节
+          </h3>
+          <div className="flex items-center gap-3">
+            <button
+              onClick={() => setServings(Math.max(1, servings - 1))}
+              className="w-8 h-8 bg-gray-100 dark:bg-gray-700 rounded-full flex items-center justify-center"
+            >
+              <Minus className="w-4 h-4 text-gray-600 dark:text-gray-300" />
+            </button>
+            <span className="text-lg font-bold text-orange-500 w-8 text-center">{servings}</span>
+            <button
+              onClick={() => setServings(servings + 1)}
+              className="w-8 h-8 bg-gray-100 dark:bg-gray-700 rounded-full flex items-center justify-center"
+            >
+              <Plus className="w-4 h-4 text-gray-600 dark:text-gray-300" />
+            </button>
+            <span className="text-sm text-gray-500">人份</span>
+          </div>
+        </div>
+      </div>
+
+      {/* Allergen Warning */}
+      {detectedAllergens.length > 0 && (
+        <div className="p-4 border-b border-gray-100 dark:border-gray-800 bg-red-50 dark:bg-red-900/20">
+          <h3 className="text-sm font-medium text-red-600 dark:text-red-400 mb-2 flex items-center gap-2">
+            <AlertTriangle className="w-4 h-4" />
+            过敏原提醒
+          </h3>
+          <div className="flex flex-wrap gap-2">
+            {detectedAllergens.map((allergen) => (
+              <span
+                key={allergen}
+                className="px-2 py-1 bg-red-100 dark:bg-red-800/30 text-red-600 dark:text-red-400 text-xs rounded-full"
+              >
+                {allergen}
+              </span>
+            ))}
+          </div>
+        </div>
+      )}
+
       {/* Nutrition Info */}
       <div className="p-4 border-b border-gray-100 dark:border-gray-800">
         <h3 className="text-sm font-medium text-gray-700 dark:text-gray-300 mb-3 flex items-center gap-2">
@@ -300,19 +481,19 @@ export default function RecipeDetail() {
         </h3>
         <div className="grid grid-cols-4 gap-2">
           <div className="bg-orange-50 dark:bg-orange-900/20 rounded-lg p-2 text-center">
-            <p className="text-lg font-bold text-orange-600">{nutrition.calories}</p>
+            <p className="text-lg font-bold text-orange-600">{Math.round(nutrition.calories * servings / baseServings)}</p>
             <p className="text-xs text-gray-500">卡路里</p>
           </div>
           <div className="bg-blue-50 dark:bg-blue-900/20 rounded-lg p-2 text-center">
-            <p className="text-lg font-bold text-blue-600">{nutrition.protein}g</p>
+            <p className="text-lg font-bold text-blue-600">{Math.round(nutrition.protein * servings / baseServings)}g</p>
             <p className="text-xs text-gray-500">蛋白质</p>
           </div>
           <div className="bg-green-50 dark:bg-green-900/20 rounded-lg p-2 text-center">
-            <p className="text-lg font-bold text-green-600">{nutrition.carbs}g</p>
+            <p className="text-lg font-bold text-green-600">{Math.round(nutrition.carbs * servings / baseServings)}g</p>
             <p className="text-xs text-gray-500">碳水</p>
           </div>
           <div className="bg-yellow-50 dark:bg-yellow-900/20 rounded-lg p-2 text-center">
-            <p className="text-lg font-bold text-yellow-600">{nutrition.fat}g</p>
+            <p className="text-lg font-bold text-yellow-600">{Math.round(nutrition.fat * servings / baseServings)}g</p>
             <p className="text-xs text-gray-500">脂肪</p>
           </div>
         </div>
@@ -345,25 +526,57 @@ export default function RecipeDetail() {
         {activeTab === 'ingredients' && (
           <div>
             <div className="flex items-center justify-between mb-4">
-              <h2 className="text-lg font-bold text-gray-900 dark:text-white">食材用料</h2>
-              <button
-                onClick={handleAddToShoppingList}
-                className="flex items-center gap-1 text-orange-500 text-sm"
-              >
-                <ShoppingCart className="w-4 h-4" />
-                加入购物清单
-              </button>
+              <h2 className="text-lg font-bold text-gray-900 dark:text-white">
+                食材用料
+                <span className="text-sm font-normal text-gray-400 ml-2">({servings}人份)</span>
+              </h2>
+              <div className="flex items-center gap-2">
+                {availableSubstitutions.length > 0 && (
+                  <button
+                    onClick={() => setShowSubstitutions(!showSubstitutions)}
+                    className={`flex items-center gap-1 text-sm ${
+                      showSubstitutions ? 'text-purple-500' : 'text-gray-400'
+                    }`}
+                  >
+                    <RefreshCw className="w-4 h-4" />
+                    替代
+                  </button>
+                )}
+                <button
+                  onClick={handleAddToShoppingList}
+                  className="flex items-center gap-1 text-orange-500 text-sm"
+                >
+                  <ShoppingCart className="w-4 h-4" />
+                  购物清单
+                </button>
+              </div>
             </div>
             <div className="space-y-2">
-              {ingredients.map((item, index) => (
-                <div
-                  key={index}
-                  className="flex items-center gap-3 py-2 border-b border-gray-50 dark:border-gray-800"
-                >
-                  <div className="w-2 h-2 bg-orange-500 rounded-full" />
-                  <span className="text-sm text-gray-700 dark:text-gray-300">{item}</span>
-                </div>
-              ))}
+              {ingredients.map((item, index) => {
+                const subInfo = availableSubstitutions.find((s) => item.includes(s.original));
+                return (
+                  <div key={index}>
+                    <div className="flex items-center gap-3 py-2 border-b border-gray-50 dark:border-gray-800">
+                      <div className="w-2 h-2 bg-orange-500 rounded-full" />
+                      <span className="text-sm text-gray-700 dark:text-gray-300 flex-1">{item}</span>
+                      {subInfo && (
+                        <span className="text-xs text-purple-500">可替代</span>
+                      )}
+                    </div>
+                    {showSubstitutions && subInfo && (
+                      <div className="ml-5 py-2 pl-3 border-l-2 border-purple-200 dark:border-purple-800">
+                        <p className="text-xs text-gray-500 mb-1">可替代为：</p>
+                        {subInfo.subs.map((sub, i) => (
+                          <div key={i} className="flex items-center gap-2 text-sm text-purple-600 dark:text-purple-400">
+                            <span>→ {sub.sub}</span>
+                            <span className="text-xs text-gray-400">({sub.note})</span>
+                          </div>
+                        ))}
+                      </div>
+                    )}
+                  </div>
+                );
+              })}
             </div>
           </div>
         )}

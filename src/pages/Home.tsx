@@ -1,12 +1,60 @@
 import { useState, useEffect, useCallback, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { RefreshCw } from 'lucide-react';
+import { RefreshCw, Leaf, Sun, Snowflake, Flower2, ChevronRight } from 'lucide-react';
 import Header from '../components/Header';
 import Banner from '../components/Banner';
 import RecipeCard from '../components/RecipeCard';
 import { RecipeGridSkeleton } from '../components/Skeleton';
 import { FloatingTimer } from '../components/Timer';
 import { recipes as allRecipes } from '../data/recipes';
+
+// Seasonal recommendations
+const getSeasonInfo = () => {
+  const month = new Date().getMonth() + 1;
+  if (month >= 3 && month <= 5) {
+    return {
+      name: '春季',
+      icon: Flower2,
+      color: 'from-green-400 to-emerald-500',
+      textColor: 'text-green-600',
+      bgColor: 'bg-green-50',
+      keywords: ['春笋', '荠菜', '香椿', '草莓'],
+      tips: '春季养肝，多吃绿色蔬菜',
+    };
+  } else if (month >= 6 && month <= 8) {
+    return {
+      name: '夏季',
+      icon: Sun,
+      color: 'from-yellow-400 to-orange-500',
+      textColor: 'text-orange-600',
+      bgColor: 'bg-orange-50',
+      keywords: ['西瓜', '黄瓜', '苦瓜', '绿豆'],
+      tips: '夏季养心，多吃清凉食物',
+    };
+  } else if (month >= 9 && month <= 11) {
+    return {
+      name: '秋季',
+      icon: Leaf,
+      color: 'from-amber-400 to-orange-500',
+      textColor: 'text-amber-600',
+      bgColor: 'bg-amber-50',
+      keywords: ['板栗', '南瓜', '莲藕', '银耳'],
+      tips: '秋季养肺，多吃润燥食物',
+    };
+  } else {
+    return {
+      name: '冬季',
+      icon: Snowflake,
+      color: 'from-blue-400 to-indigo-500',
+      textColor: 'text-blue-600',
+      bgColor: 'bg-blue-50',
+      keywords: ['羊肉', '白萝卜', '山药', '红枣'],
+      tips: '冬季养肾，多吃温补食物',
+    };
+  }
+};
+
+const seasonInfo = getSeasonInfo();
 
 export default function Home() {
   const [activeTab, setActiveTab] = useState(2); // 推荐 tab active by default
@@ -123,6 +171,37 @@ export default function Home() {
 
       <Header activeTab={activeTab} onTabChange={setActiveTab} />
       <Banner />
+
+      {/* Seasonal Recommendations */}
+      <div className="mx-4 my-3">
+        <div className={`bg-gradient-to-r ${seasonInfo.color} rounded-xl p-4 text-white`}>
+          <div className="flex items-center justify-between mb-3">
+            <div className="flex items-center gap-2">
+              <seasonInfo.icon className="w-5 h-5" />
+              <span className="font-bold">{seasonInfo.name}推荐</span>
+            </div>
+            <button
+              onClick={() => navigate('/search')}
+              className="flex items-center gap-1 text-white/80 text-sm"
+            >
+              更多
+              <ChevronRight className="w-4 h-4" />
+            </button>
+          </div>
+          <p className="text-white/80 text-sm mb-3">{seasonInfo.tips}</p>
+          <div className="flex gap-2 overflow-x-auto pb-1 scrollbar-hide">
+            {seasonInfo.keywords.map((keyword) => (
+              <button
+                key={keyword}
+                onClick={() => navigate(`/search?q=${keyword}`)}
+                className="flex-shrink-0 px-3 py-1.5 bg-white/20 rounded-full text-sm hover:bg-white/30 transition-colors"
+              >
+                {keyword}
+              </button>
+            ))}
+          </div>
+        </div>
+      </div>
 
       {/* Recipe Grid */}
       <div className="px-4">
