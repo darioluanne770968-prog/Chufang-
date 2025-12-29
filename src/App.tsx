@@ -1,5 +1,6 @@
 import { BrowserRouter as Router, Routes, Route, useLocation } from 'react-router-dom';
 import { AppProvider } from './context/AppContext';
+import { LanguageProvider } from './context/LanguageContext';
 import Home from './pages/Home';
 import Classroom from './pages/Classroom';
 import Create from './pages/Create';
@@ -17,6 +18,10 @@ import Challenges from './pages/Challenges';
 import MealPlanner from './pages/MealPlanner';
 import Pantry from './pages/Pantry';
 import IngredientSearch from './pages/IngredientSearch';
+import Social from './pages/Social';
+import VideoTutorials from './pages/VideoTutorials';
+import WinePairing from './pages/WinePairing';
+import CookingTips from './pages/CookingTips';
 import BottomNav from './components/BottomNav';
 
 // Routes where bottom nav should be hidden
@@ -48,6 +53,11 @@ function AppContent() {
         <Route path="/meal-planner" element={<MealPlanner />} />
         <Route path="/pantry" element={<Pantry />} />
         <Route path="/ingredient-search" element={<IngredientSearch />} />
+        <Route path="/social" element={<Social />} />
+        <Route path="/video-tutorials" element={<VideoTutorials />} />
+        <Route path="/wine-pairing" element={<WinePairing />} />
+        <Route path="/wine-pairing/:recipeId" element={<WinePairing />} />
+        <Route path="/cooking-tips" element={<CookingTips />} />
       </Routes>
       {!shouldHideBottomNav && <BottomNav />}
     </div>
@@ -56,11 +66,13 @@ function AppContent() {
 
 function App() {
   return (
-    <AppProvider>
-      <Router>
-        <AppContent />
-      </Router>
-    </AppProvider>
+    <LanguageProvider>
+      <AppProvider>
+        <Router>
+          <AppContent />
+        </Router>
+      </AppProvider>
+    </LanguageProvider>
   );
 }
 
