@@ -17,15 +17,14 @@ export default function RecipeCard({ recipe, onClick }: RecipeCardProps) {
       onClick={onClick}
     >
       {/* Image */}
-      <div className="relative">
+      <div className="relative aspect-[4/3]">
         <img
           src={recipe.image}
           alt={recipe.title}
-          className="w-full object-cover"
-          style={{ minHeight: '120px' }}
+          className="w-full h-full object-cover"
           onError={(e) => {
             const target = e.target as HTMLImageElement;
-            target.src = `https://picsum.photos/400/${300 + Math.random() * 200}?random=${recipe.id}`;
+            target.src = `https://picsum.photos/400/300?random=${recipe.id}`;
           }}
         />
         {/* Favorite button overlay */}

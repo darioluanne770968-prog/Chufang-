@@ -719,7 +719,7 @@ export default function RecipeDetail() {
       </div>
 
       {/* Bottom action bar */}
-      <div className="fixed bottom-0 left-0 right-0 bg-white dark:bg-gray-800 border-t border-gray-100 dark:border-gray-700 p-4 flex items-center gap-3 z-40">
+      <div className="fixed bottom-0 left-1/2 -translate-x-1/2 w-full max-w-[430px] bg-white dark:bg-gray-800 border-t border-gray-100 dark:border-gray-700 p-4 flex items-center gap-3 z-40">
         <button
           onClick={handleStartCooking}
           className="flex-1 bg-orange-500 text-white py-3 rounded-full font-medium hover:bg-orange-600 transition-colors flex items-center justify-center gap-2"

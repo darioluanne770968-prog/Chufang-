@@ -11,7 +11,7 @@ export default function Header({ activeTab, onTabChange }: HeaderProps) {
   const navigate = useNavigate();
 
   return (
-    <header className="bg-white dark:bg-gray-800 sticky top-0 z-50">
+    <header className="bg-white dark:bg-gray-800 sticky top-0 z-50 pt-safe">
       {/* Top bar with menu, search, and notifications */}
       <div className="flex items-center px-4 py-3 gap-3">
         <button className="p-1">
@@ -35,20 +35,20 @@ export default function Header({ activeTab, onTabChange }: HeaderProps) {
       </div>
 
       {/* Category tabs */}
-      <div className="flex items-center px-4 pb-2 overflow-x-auto hide-scrollbar">
+      <div className="flex items-center justify-around px-2 pb-2">
         {categories.map((category) => (
           <button
             key={category.id}
             onClick={() => onTabChange(category.id)}
-            className={`px-4 py-2 whitespace-nowrap text-sm font-medium transition-colors relative ${
+            className={`px-3 py-1.5 text-sm font-medium transition-colors relative ${
               activeTab === category.id
-                ? 'text-gray-900 dark:text-white'
-                : 'text-gray-500 dark:text-gray-400'
+                ? 'text-orange-500'
+                : 'text-gray-400'
             }`}
           >
             {category.name}
             {activeTab === category.id && (
-              <div className="absolute bottom-0 left-1/2 transform -translate-x-1/2 w-6 h-1 bg-orange-500 rounded-full" />
+              <div className="absolute bottom-0 left-1/2 transform -translate-x-1/2 w-5 h-0.5 bg-orange-500 rounded-full" />
             )}
           </button>
         ))}

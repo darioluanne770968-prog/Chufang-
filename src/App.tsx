@@ -34,7 +34,7 @@ function AppContent() {
   );
 
   return (
-    <div className="max-w-lg mx-auto bg-white dark:bg-gray-900 min-h-screen relative shadow-xl">
+    <div className="w-full max-w-[430px] mx-auto bg-white dark:bg-gray-900 min-h-screen relative shadow-2xl">
       <Routes>
         <Route path="/" element={<Home />} />
         <Route path="/classroom" element={<Classroom />} />

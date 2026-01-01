@@ -1,8 +1,7 @@
 import { useState, useEffect, useCallback, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { RefreshCw, Leaf, Sun, Snowflake, Flower2, ChevronRight } from 'lucide-react';
+import { RefreshCw, Leaf, Sun, Snowflake, Flower2 } from 'lucide-react';
 import Header from '../components/Header';
-import Banner from '../components/Banner';
 import RecipeCard from '../components/RecipeCard';
 import { RecipeGridSkeleton } from '../components/Skeleton';
 import { FloatingTimer } from '../components/Timer';
@@ -170,31 +169,28 @@ export default function Home() {
       </div>
 
       <Header activeTab={activeTab} onTabChange={setActiveTab} />
-      <Banner />
 
-      {/* Seasonal Recommendations */}
+      {/* Seasonal Banner */}
       <div className="mx-4 my-3">
-        <div className={`bg-gradient-to-r ${seasonInfo.color} rounded-xl p-4 text-white`}>
-          <div className="flex items-center justify-between mb-3">
+        <div className={`bg-gradient-to-r ${seasonInfo.color} rounded-xl p-3 text-white`}>
+          <div className="flex items-center justify-between">
             <div className="flex items-center gap-2">
-              <seasonInfo.icon className="w-5 h-5" />
-              <span className="font-bold">{seasonInfo.name}推荐</span>
+              <seasonInfo.icon className="w-4 h-4" />
+              <span className="font-medium">{seasonInfo.name}推荐 · {seasonInfo.tips}</span>
             </div>
             <button
               onClick={() => navigate('/search')}
-              className="flex items-center gap-1 text-white/80 text-sm"
+              className="text-white/80 text-sm"
             >
-              更多
-              <ChevronRight className="w-4 h-4" />
+              更多 &gt;
             </button>
           </div>
-          <p className="text-white/80 text-sm mb-3">{seasonInfo.tips}</p>
-          <div className="flex gap-2 overflow-x-auto pb-1 scrollbar-hide">
+          <div className="flex gap-2 mt-2">
             {seasonInfo.keywords.map((keyword) => (
               <button
                 key={keyword}
                 onClick={() => navigate(`/search?q=${keyword}`)}
-                className="flex-shrink-0 px-3 py-1.5 bg-white/20 rounded-full text-sm hover:bg-white/30 transition-colors"
+                className="px-3 py-1 bg-white/20 rounded-full text-sm hover:bg-white/30"
               >
                 {keyword}
               </button>
